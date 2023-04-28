@@ -2,7 +2,7 @@
 
 This blog post and code replication are done by the following students from group 69 as part of their CS4240 Deep Learning 2022–23 course project:
 
-|Author|ID|Contact|Contribution|
+|Name|ID|Contact|Contribution|
 |-|-|-|-|
 |Justas Andriuskevicius|5062632|J.Andriuskevicius-1@student.tudelft.nl|model training, result analysis, hyperparam tuning, model architecture tuning|
 |Dequan Ou|5095441|d.ou@student.tudelft.nl|dataset preparation, preprocessing|
@@ -22,9 +22,21 @@ The paper evaluated the performance of Asynchronous Event-based Graph Neural Net
 
 The dataset was split into training, validation, and testing sets in an 8:1:1 ratio. Each image was captured using an event camera, resulting in a binary stream of events rather than traditional frames. Each event contains information on the change in intensity at a specific pixel location and timestamp. An visualization of a *brain* data is shown on the following figures.
 
+![2D visualization of the data of a ‘brain’ as an example](assets/brain-2d.webp) ![3D visualization of the data of a ‘brain’ as an example](assets/brain-3d.webp)
+
 To reduce the computational complexity, each bin file containing events was randomly subsampled to retain only 15,000 events. Additionally, the temporal position of each event was normalized by a factor of beta to account for the differences in event rates between the cameras used to capture the dataset.
 
+![Data preprocessing](assets/dataproc.webp)
+
 To feed the preprocessed data into the neural network, edges were generated between pairs of nodes in the spatiotemporal graph representation of the event data. These preprocessed data were then fed into a data loader to form batches for training the AEGNNs model. Overall, these preprocessing steps aimed to reduce the computational complexity of the dataset while retaining the spatiotemporal information of the events necessary for accurate object recognition.
+
+## Updated Code
+
+In this section, the updates and improvements made to the codebase to enhance usability of the implemented model are discussed. These changes are necessary to resolve potential issues, and provide a more comprehensive understanding of the underlying processes..
+
+The reason for this [change](https://github.com/uzh-rpg/aegnn/commit/f89d0f02a7d2529b61f1b1813a3345e7efff9858#diff-32a911ef66e9808c5f6d3f28b7a040c6b49ba7906126c25f76fe0dba94e553f5) in `max_pool_x.py` file is likely due to an update in the `torch_geometric` library. It appears that the structure of the library has been reorganised, and the `max_pool_x` and `voxel_grid` functions have been moved from the `torch_geometric.nn.pool` submodule to the `torch_geometric.nn` module.
+
+In the [change](https://github.com/uzh-rpg/aegnn/commit/f89d0f02a7d2529b61f1b1813a3345e7efff9858#diff-1b97a5326ffbfe580f66e53ed1d437c5ad5c01ea58a149917cfaf3e01eeb1035) to `ncaltech101.py`, a new variable `original_num_nodes` is added to store the initial number of nodes in the input data. This variable is used in the for loop to check the tensor size against the original number of nodes instead of the updated `data.num_nodes`. This change makes the code more robust and avoids potential issues due to changing `data.num_nodes` during the loop. The main issue is solved with this change which was after subsampling `data.pos` and `data.x` were never matching in length. If it is not matching the model cannot be trained.
 
 ---
 
