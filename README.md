@@ -1,3 +1,5 @@
+↖ The outline is here :p
+
 # Replication results for *AEGNN: Asynchronous Event-based Graph Neural Networks*
 
 This blog post and code replication are done by the following students from group 69 as part of their CS4240 Deep Learning 2022–23 course project:
@@ -8,7 +10,9 @@ This blog post and code replication are done by the following students from grou
 |Dequan Ou|5095441|d.ou@student.tudelft.nl|dataset preparation, preprocessing|
 |Yueqian Liu|5758386|y.liu-133@student.tudelft.nl|setting up the env, preprocessing, documentation writing|
 
-> link to: [paper](http://rpg.ifi.uzh.ch/docs/CVPR22_Schaefer.pdf), [official code](https://github.com/uzh-rpg/aegnn), [tlwzzy's code repository](https://github.com/tlwzzy/aegnn)
+Our effort is mostly in [`coursework.ipynb`](https://github.com/ErcBunny/aegnn-CS4240-TUD/blob/master/coursework.ipynb), which contains all the steps for a complete replication. Also we managed to "hack" the official code based on the official repo and another repo by tlwzzy.
+
+> link to: [paper](http://rpg.ifi.uzh.ch/docs/CVPR22_Schaefer.pdf), [official code](https://github.com/uzh-rpg/aegnn), [tlwzzy's code repository](https://github.com/tlwzzy/aegnn), [original README](https://github.com/ErcBunny/aegnn-CS4240-TUD#aegnn-asynchronous-event-based-graph-neural-networks)
 
 ## Introduction
 
@@ -54,9 +58,13 @@ The goal is to achieve accuracy of 0.668 and 7.31 MFLOP/ev on N-Caltech101 datas
 
 ![paper-result](assets/paper-result.png)
 
+### Loss
+
 In the following figure it can be seen that increasing learning rate results in a larger loss (red line), while increasing even more (pink line) makes the loss fluctuate with respect to epochs.A learning rate that is too high might cause the model to overshoot the optimal weights, resulting in oscillations around the optimal values, or even diverging from them entirely. Using ReLU activation function instead of ELU does not influence performance significantly (green line). The original parameters have the best performance (black line).
 
 ![val-loss](assets/val-loss.png)
+
+### Accuracy
 
 The highest accuracy was achieved with the original parameters of 0.395. In the paper it is not stated how many epochs are used but is assumed to be more than 20, because learning rate scheduler is activated after 20 epochs. From the graph below it can be seen that with each epoch there is an increase in accuracy for original parameters (black line). It is deemed that with more than 20 epochs it could be possible to reach the 0.668 accuracy levels, however it is hard to say how many epochs it would take since we are limited to 10 epochs (see section ***Challenges***) and the paper does not mention the number of epochs used.
 
@@ -66,9 +74,43 @@ For the top-3 accuracy the rankings stay the same as before, as shown in the gra
 
 ![val-acc3](assets/val-acctop3.png)
 
-In the next figure can be seen a comparison between recognition model and dense GNN model for MFLOPs/ev per each layer. Using asynchronous formulation MFLOPs are drastically reduced. The total MFLOPs/ev is 0.35 which is far from the goal of 7.31. There could be several reasons for the discrepancy in MFLOPs/ev values between our implementation and the reported results in the AEGNN paper. One of the main factors could be differences in hardware, where different hardware can affect performance and resource usage. Also could be a difference in the methodology for measuring MFLOPs/ev. We are running `flops.py` file, which outputs FLOPs for each layer. After that it is divided by $10^6$ and 25000 (number of events). In AEGNN paper it is not specifically said about MFLOPs/ev calculation method, only the end results are presented.
+### MFLOPs/ev
+
+In the next figure can be seen a comparison between recognition model and dense GNN model for MFLOPs/ev per each layer. Using asynchronous formulation MFLOPs are drastically reduced. The total MFLOPs/ev is 0.35 which is far from the goal of 7.31. There could be several reasons for the discrepancy in MFLOPs/ev values between our implementation and the reported results in the AEGNN paper. One of the main factors could be differences in hardware, where different hardware can affect performance and resource usage. Also could be a difference in the methodology for measuring MFLOPs/ev. We are running `evaluation/flops.py` file, which outputs FLOPs for each layer. After that it is divided by $10^6$ and 25000 (number of events). In AEGNN paper it is not specifically said about MFLOPs/ev calculation method, only the end results are presented.
 
 ![mflop-ev](assets/mflop-ev.png)
+
+In the next figure can be seen log MFLOPs/ev difference between asynchronous model (left) and GNN dense model (right) each layer. In the AEGNN paper norm layers are not included and `MaxPool` layer is same as `pool5` layer in recreated results. `Conv1`, `Conv2`, `Conv3`, `Conv4`, `Conv5` and `MaxPool` (or `pool5`) layers have quite similar results to presented AEGNN paper results. However in paper `Conv6`, `Conv7` and `FC` layers are way lower than what we recreated. Same hardware reasoning as before could be applied to discrepancies here.
+
+![log-mf-ev](assets/log-mflop-ev.png)
+
+### Runtime
+
+The runtime performance is improved as well. The only exception is in the fully connected (`FC`) layer. Fully connected layers don't exhibit the same level of parallelism as convolutional layers because they don't use shared weights or local connectivity. Asynchronous methods are generally more effective for layers with higher degrees of parallelism, as they can exploit the parallel nature of the computations more effectively. In the case of `FC` layers, the benefits of asynchronous formulation may not be as pronounced.
+
+![runtime](assets/runtime.png)
+
+## Challenges
+
+The process of recreating the AEGNN code presented numerous challenges, which were mainly attributed to issues with the Google Cloud platform and local machine limitations. In this section, we will discuss these challenges in detail and the implications they had on the project's progress and results.
+
+**Google Cloud Virtual Machine (VM) Limitations**: Setting up a virtual machine with GPU on Google Cloud was an important requirement for the successful execution of the AEGNN code, as it would provide the necessary computational power and resources. Unfortunately, we faced a significant challenge in acquiring a VM with GPU, as they were consistently unavailable across all regions. This unavailability made it impossible to utilize Google Cloud's infrastructure for training and testing the model, which led to exploring alternative solutions.
+
+**Local Machine Training and Testing**: Due to the inability to set up a VM with GPU on Google Cloud, we had no choice but to train and test the model locally. This approach presented several limitations that directly affected the project's efficiency and effectiveness. For instance, local machines generally have less computational power and fewer resources than cloud-based solutions, leading to longer training times and restricted experimentation capabilities.
+
+**Extended Training Time per Epoch**: As a consequence of running the model locally, training times for each epoch were significantly longer than what could be achieved on a cloud-based platform with GPU support. It took approximately 1.5 hours to complete a single epoch, which made it difficult to experiment with various hyperparameters or custom model architectures. This extended training time severely restricted the scope and pace of our project.
+
+**Maximum Epoch Limitation**: Another critical limitation of running the AEGNN code locally was the recurring issue of the training and testing process crashing after 10 epochs. This problem posed a significant constraint, as it limited the maximum number of epochs to 10. The inability to train the model beyond this point could potentially impact the overall performance and accuracy of the model, thus preventing us from obtaining optimal results.
+
+## Conclusion
+
+In this report, we have presented our attempt to recreate the AEGNN model and validate its performance on the N-Caltech101 dataset. Despite facing numerous challenges, including limitations in Google Cloud platform, local machine training, extended training times, and a maximum epoch limitation, we managed to implement the model and evaluate its performance.
+
+Our results indicate that the AEGNN model has potential, as it demonstrates improvements in runtime performance and resource efficiency compared to a dense GNN model. However, we did not achieve the desired accuracy of 0.668 or 7.31 MFLOPs/ev, as stated in the original AEGNN paper. The highest validation accuracy we obtained was 0.395, which suggests that further training and experimentation might be needed to reach the target performance.
+
+Several factors might have contributed to the discrepancies in our results compared to those presented in the AEGNN paper, such as differences in hardware, MFLOPs/ev calculation methodology, and the maximum epoch limitation. Furthermore, the unavailability of a Google Cloud VM with GPU support significantly restricted our ability to experiment with different hyperparameters or model architectures, which could potentially enhance the performance of the AEGNN model.
+
+In conclusion, while our recreation of the AEGNN model did not achieve the desired results, it highlights the potential of asynchronous methods for improving neural network performance in specific cases. Future work should focus on addressing the limitations encountered in this project and conducting more extensive experimentation to further validate and optimize the AEGNN model.
 
 ---
 
