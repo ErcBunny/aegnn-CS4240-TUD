@@ -1,5 +1,3 @@
-↖ The outline is here :p
-
 # Replication results for *AEGNN: Asynchronous Event-based Graph Neural Networks*
 
 This blog post and code replication are done by the following students from group 69 as part of their CS4240 Deep Learning 2022–23 course project:
