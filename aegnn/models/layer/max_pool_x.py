@@ -1,7 +1,7 @@
-import torch
 
+import torch
 from torch_geometric.data import Data
-from torch_geometric.nn.pool import max_pool_x, voxel_grid
+from torch_geometric.nn import voxel_grid, max_pool_x
 from typing import List, Optional, Tuple, Union
 
 

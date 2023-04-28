@@ -99,6 +99,11 @@ class EventDataModule(pl.LightningDataModule):
             data = self._add_edge_attributes(data)
 
         # Checking the loaded data for the sake of assuring shape consistency.
+        print('-----------------------')
+        print(data.pos.shape[0])
+        
+        print(data.x.shape[0])
+        print(data)
         assert data.pos.shape[0] == data.x.shape[0], "x and pos not matching in length"
         assert data.pos.shape[-1] >= 2
         assert data.x.shape[-1] == 1

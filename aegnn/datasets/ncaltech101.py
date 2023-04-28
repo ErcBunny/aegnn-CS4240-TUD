@@ -135,23 +135,24 @@ class NCaltech101(EventDataModule):
 
     def pre_transform(self, data: Data) -> Data:
         params = self.hparams.preprocessing
-
+        original_num_nodes = data.num_nodes
         # Cut-off window of highest increase of events.
         window_us = 50 * 1000
         t = data.pos[data.num_nodes // 2, 2]
         index1 = torch.clamp(torch.searchsorted(data.pos[:, 2].contiguous(), t) - 1, 0, data.num_nodes - 1)
         index0 = torch.clamp(torch.searchsorted(data.pos[:, 2].contiguous(), t-window_us) - 1, 0, data.num_nodes - 1)
         for key, item in data:
-            if torch.is_tensor(item) and item.size(0) == data.num_nodes and item.size(0) != 1:
+            if torch.is_tensor(item) and item.size(0) == original_num_nodes and item.size(0) != 1:
                 data[key] = item[index0:index1, :]
-
+        print(f'BEFORE DATA {data}')
         # Coarsen graph by uniformly sampling n points from the event point cloud.
         data = self.sub_sampling(data, n_samples=params["n_samples"], sub_sample=params["sampling"])
-
+        print(f'AFTER DATA {data}')
         # Re-weight temporal vs. spatial dimensions to account for different resolutions.
         data.pos[:, 2] = normalize_time(data.pos[:, 2])
         # Radius graph generation.
         data.edge_index = radius_graph(data.pos, r=params["r"], max_num_neighbors=params["d_max"])
+        
         return data
 
     @staticmethod

@@ -57,6 +57,7 @@ def create_and_run_model(dm, num_events: int, index: int, device: torch.device, 
     model = aegnn.models.networks.GraphRes(dm.name, input_shape, dm.num_classes, pooling_size=args.pooling_size)
     model.to(device)
     model = aegnn.asyncronous.make_model_asynchronous(model, args.radius, list(dm.dims), edge_attr, **kwargs)
+    print('MODEL IS INITIALIZED')
 
     # Run experiment, i.e. initialize the asynchronous graph and iteratively add events to it.
     _ = model.forward(events_initial.to(device))  # initialization
@@ -122,7 +123,8 @@ if __name__ == '__main__':
     if arguments.debug:
         _ = aegnn.utils.loggers.LoggingLogger(None, name="debug")
 
-    data_module = aegnn.datasets.NCars(batch_size=1, shuffle=False)
+    #data_module = aegnn.datasets.NCars(batch_size=1, shuffle=False)
+    data_module = aegnn.datasets.NCaltech101(batch_size=1, shuffle=False)
     data_module.setup()
     event_counts = [25000]
     # event_counts = list(np.linspace(1000, 15000, num=10).astype(int))

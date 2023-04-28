@@ -145,8 +145,8 @@ def __check_support(module) -> bool:
     elif isinstance(module, torch_geometric.nn.conv.SplineConv):
         if module.bias is not None:
             raise NotImplementedError("SplineConvs with bias are not yet supported!")
-        if module.root is not None:
-            raise NotImplementedError("SplineConvs with root weight are not yet supported!")
+        # if module.root is not None:
+        #     raise NotImplementedError("SplineConvs with root weight are not yet supported!")
     return True
 
 
