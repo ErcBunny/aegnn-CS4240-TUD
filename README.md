@@ -22,7 +22,7 @@ The paper evaluated the performance of Asynchronous Event-based Graph Neural Net
 
 The dataset was split into training, validation, and testing sets in an 8:1:1 ratio. Each image was captured using an event camera, resulting in a binary stream of events rather than traditional frames. Each event contains information on the change in intensity at a specific pixel location and timestamp. An visualization of a *brain* data is shown on the following figures.
 
-![2D visualization of the data of a ‘brain’ as an example](assets/brain-2d.webp) ![3D visualization of the data of a ‘brain’ as an example](assets/brain-3d.webp)
+![event-brain](assets/brain.png)
 
 To reduce the computational complexity, each bin file containing events was randomly subsampled to retain only 15,000 events. Additionally, the temporal position of each event was normalized by a factor of beta to account for the differences in event rates between the cameras used to capture the dataset.
 
@@ -30,13 +30,45 @@ To reduce the computational complexity, each bin file containing events was rand
 
 To feed the preprocessed data into the neural network, edges were generated between pairs of nodes in the spatiotemporal graph representation of the event data. These preprocessed data were then fed into a data loader to form batches for training the AEGNNs model. Overall, these preprocessing steps aimed to reduce the computational complexity of the dataset while retaining the spatiotemporal information of the events necessary for accurate object recognition.
 
-## Updated Code
+## Changes to Official Code
 
 In this section, the updates and improvements made to the codebase to enhance usability of the implemented model are discussed. These changes are necessary to resolve potential issues, and provide a more comprehensive understanding of the underlying processes..
 
-The reason for this [change](https://github.com/uzh-rpg/aegnn/commit/f89d0f02a7d2529b61f1b1813a3345e7efff9858#diff-32a911ef66e9808c5f6d3f28b7a040c6b49ba7906126c25f76fe0dba94e553f5) in `max_pool_x.py` file is likely due to an update in the `torch_geometric` library. It appears that the structure of the library has been reorganised, and the `max_pool_x` and `voxel_grid` functions have been moved from the `torch_geometric.nn.pool` submodule to the `torch_geometric.nn` module.
+The reason for this [change](https://github.com/ErcBunny/aegnn-CS4240-TUD/commit/f89d0f02a7d2529b61f1b1813a3345e7efff9858#diff-32a911ef66e9808c5f6d3f28b7a040c6b49ba7906126c25f76fe0dba94e553f5) in `max_pool_x.py` file is likely due to an update in the `torch_geometric` library. It appears that the structure of the library has been reorganised, and the `max_pool_x` and `voxel_grid` functions have been moved from the `torch_geometric.nn.pool` submodule to the `torch_geometric.nn` module.
 
-In the [change](https://github.com/uzh-rpg/aegnn/commit/f89d0f02a7d2529b61f1b1813a3345e7efff9858#diff-1b97a5326ffbfe580f66e53ed1d437c5ad5c01ea58a149917cfaf3e01eeb1035) to `ncaltech101.py`, a new variable `original_num_nodes` is added to store the initial number of nodes in the input data. This variable is used in the for loop to check the tensor size against the original number of nodes instead of the updated `data.num_nodes`. This change makes the code more robust and avoids potential issues due to changing `data.num_nodes` during the loop. The main issue is solved with this change which was after subsampling `data.pos` and `data.x` were never matching in length. If it is not matching the model cannot be trained.
+In the [change](https://github.com/ErcBunny/aegnn-CS4240-TUD/commit/f89d0f02a7d2529b61f1b1813a3345e7efff9858#diff-1b97a5326ffbfe580f66e53ed1d437c5ad5c01ea58a149917cfaf3e01eeb1035) in `ncaltech101.py`, a new variable `original_num_nodes` is added to store the initial number of nodes in the input data. This variable is used in the for loop to check the tensor size against the original number of nodes instead of the updated `data.num_nodes`. This change makes the code more robust and avoids potential issues due to changing `data.num_nodes` during the loop. The main issue is solved with this change which was after subsampling `data.pos` and `data.x` were never matching in length. If it is not matching the model cannot be trained.
+
+The changes in the code add functionality to handle the training and validation process for the `RecognitionModel` class can be seen [here](https://github.com/ErcBunny/aegnn-CS4240-TUD/commit/f89d0f02a7d2529b61f1b1813a3345e7efff9858#diff-9841ae1aee17d783bd32b8084371ae0fa64b6f774fe11cf6a16346ce86850361). By including these methods, the model can now be trained and validated using PyTorch Lightning's built-in training loop. Also `train.py` file, which helps track the training and validation progress in the [Weights & Biases](https://wandb.ai/site) platform.
+
+## Training
+
+The preprocessed Ncaltech101 dataset was used to train the model. Training was done for 3 different learning rates (`1e-2`, original `1e-3`, and `5e-3`) and once for a different activation function (ReLU instead of ELU). All of the trainings had 10 epochs. The reason is mentioned in ***Challenges*** section. The architecture of the recognition model comprises convolutional blocks, each consisting of a `SplineConv` layer, characterised by the number of output channels `Mout` and kernel size `k`, an ELU activation function, and batch normalisation. Max graph pooling layers are incorporated after the fifth and seventh convolutions, with skip connections included after the fourth and fifth convolutions. Additionally, a fully connected layer is employed to map the extracted feature maps to the network outputs. The recognition network employs convolutions with a kernel size `k = 2` and output channels `Mout[i] = (1, 8, 16, 16, 16, 32, 32, 32)`. `CrossEntropyLoss` is used as a loss function and Adam optimisation algorithm is used with weight decay of `5e-3`. Finally for performance metrics accuracy is used, which is defined as the proportion of correctly classified instances out of the total instances in the dataset.
+
+![training](assets/training.jpg)
+
+## Results
+
+The results section delves into various aspects of the model's performance, including validation accuracy, top-3 accuracy, validation loss, runtime, and Mflops/ev comparison for different layers. It will highlight the strengths and potential areas for improvement of our model, and the comparison with GNN Dense will help contextualise its performance relative to a well-established baseline.
+
+The goal is to achieve accuracy of 0.668 and 7.31 MFLOP/ev on N-Caltech101 dataset as shown in the following table.
+
+![paper-result](assets/paper-result.png)
+
+In the following figure it can be seen that increasing learning rate results in a larger loss (red line), while increasing even more (pink line) makes the loss fluctuate with respect to epochs.A learning rate that is too high might cause the model to overshoot the optimal weights, resulting in oscillations around the optimal values, or even diverging from them entirely. Using ReLU activation function instead of ELU does not influence performance significantly (green line). The original parameters have the best performance (black line).
+
+![val-loss](assets/val-loss.png)
+
+The highest accuracy was achieved with the original parameters of 0.395. In the paper it is not stated how many epochs are used but is assumed to be more than 20, because learning rate scheduler is activated after 20 epochs. From the graph below it can be seen that with each epoch there is an increase in accuracy for original parameters (black line). It is deemed that with more than 20 epochs it could be possible to reach the 0.668 accuracy levels, however it is hard to say how many epochs it would take since we are limited to 10 epochs (see section ***Challenges***) and the paper does not mention the number of epochs used.
+
+![val-acc](assets/val-acc.png)
+
+For the top-3 accuracy the rankings stay the same as before, as shown in the graph below.
+
+![val-acc3](assets/val-acctop3.png)
+
+In the next figure can be seen a comparison between recognition model and dense GNN model for MFLOPs/ev per each layer. Using asynchronous formulation MFLOPs are drastically reduced. The total MFLOPs/ev is 0.35 which is far from the goal of 7.31. There could be several reasons for the discrepancy in MFLOPs/ev values between our implementation and the reported results in the AEGNN paper. One of the main factors could be differences in hardware, where different hardware can affect performance and resource usage. Also could be a difference in the methodology for measuring MFLOPs/ev. We are running `flops.py` file, which outputs FLOPs for each layer. After that it is divided by $10^6$ and 25000 (number of events). In AEGNN paper it is not specifically said about MFLOPs/ev calculation method, only the end results are presented.
+
+![mflop-ev](assets/mflop-ev.png)
 
 ---
 
